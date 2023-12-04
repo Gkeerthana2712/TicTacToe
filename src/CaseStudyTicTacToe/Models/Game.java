@@ -60,8 +60,45 @@ public class Game {
         nextMovePlayerIdx++;
         nextMovePlayerIdx %= players.size();
 
+        // check if we have a winner
+        if(checkWinner(finalMoveObj)){
+            gameState = GameState.WIN;
+            this.winner = currentMovePlayer;
+        }else if(this.moves.size() == this.board.getSize()* this.board.getSize()){
+            gameState = GameState.DRAW;
+        }
     }
 
+    private boolean checkWinner(Move move){
+        for(WinningStrategy winningStrategy: this.winningStrategies){
+            if(winningStrategy.checkWinner(this.board, move)){
+                return  true;
+            }
+        }
+        return  false;
+    }
+
+    public void undo() {
+        // what if there was no move ?
+        if(moves.size() ==0){
+            return;
+        }
+        //get values of the last move
+        Move lastMove = this.moves.get(moves.size()-1);
+        moves.remove(lastMove);
+        //undo all the work done in the cell
+        Cell cell = lastMove.getCell();
+        cell.setCellState(CellState.EMPTY);
+        cell.setPlayer(null);
+        //undo of next player increament
+        nextMovePlayerIdx--;
+        nextMovePlayerIdx = (nextMovePlayerIdx + players.size()) % players.size();
+        // undo all changes done for checkwinner in hashmap
+        for(WinningStrategy winningStrategy : this.winningStrategies){
+            winningStrategy.handleUndo(board, lastMove);
+        }
+
+    }
     private boolean validateMove(Move playerMove) {
 
         int row = playerMove.getCell().getRow();
@@ -77,6 +114,8 @@ public class Game {
 
         return  true;
     }
+
+
 
     public static  class Builder{
 
